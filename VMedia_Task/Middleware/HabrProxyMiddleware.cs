@@ -5,7 +5,8 @@ namespace ProxyServer
 {
     public class HabrProxyMiddleware
     {
-        private readonly HttpClient _httpClient = new HttpClient();
+        private static readonly HttpClient _httpClient = new HttpClient();
+        private static bool firstTime = true;
         private readonly RequestDelegate _next;
 
         public HabrProxyMiddleware(RequestDelegate next)
@@ -13,7 +14,7 @@ namespace ProxyServer
             _next = next;
         }
 
-        public async Task InvokeAsync(HttpContext context)
+        public async Task Invoke(HttpContext context)
         {
             try
             {
@@ -86,7 +87,7 @@ namespace ProxyServer
             context.Response.Headers.Remove("transfer-encoding");
         }
 
-        private HttpMethod GetMethod(string method)
+        private static HttpMethod GetMethod(string method)
         {
             if (HttpMethods.IsDelete(method)) return HttpMethod.Delete;
             if (HttpMethods.IsGet(method)) return HttpMethod.Get;
@@ -118,8 +119,9 @@ namespace ProxyServer
             //    targetUri = new Uri("https://skcrtxr.com" + remainingPath);
             //}
 
-            return targetUri ?? new Uri("https://habr.com/en/all/");
-            //return targetUri ?? new Uri("https://habr.com" + request.Path);
+            var result = targetUri ?? new Uri((firstTime ? "https://habr.com/en/all" : "https://habr.com") + request.Path);
+            firstTime = false;
+            return result;
         }
 
         private async Task ProcessResponseContent(HttpContext context, HttpResponseMessage responseMessage)
@@ -128,8 +130,9 @@ namespace ProxyServer
             var content = await responseMessage.Content.ReadAsByteArrayAsync();
 
             if (IsContentOfType(responseMessage, "text/html") ||
-                IsContentOfType(responseMessage, "text/javascript"))
-                //IsContentOfType(responseMessage, "application/javascript"))
+                IsContentOfType(responseMessage, "text/javascript") ||
+                IsContentOfType(responseMessage, "text/css") ||
+                IsContentOfType(responseMessage, "application/javascript"))
             {
                 var stringContent = Encoding.UTF8.GetString(content);
                 var newContent = stringContent
