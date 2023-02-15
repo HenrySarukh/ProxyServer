@@ -1,7 +1,6 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
 using HtmlAgilityPack;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace ProxyServer
 {
@@ -136,9 +135,13 @@ namespace ProxyServer
                 IsContentOfType(responseMessage, "text/css"))
             {
                 var pageContent = Encoding.UTF8.GetString(content);
+                var withNoScript = Regex.Replace(pageContent, "<script.*?</script>", "");
+
+                var withCorrectLinks = withNoScript
+                    .Replace("https://habr.com", "/habrDotNet");
                 // assume htmlString contains the HTML code
-                HtmlDocument doc = new HtmlDocument();
-                doc.LoadHtml(pageContent);
+                var doc = new HtmlDocument();
+                doc.LoadHtml(withCorrectLinks);
 
                 // select all visible text nodes
                 var textNodes = doc.DocumentNode.DescendantsAndSelf()
@@ -148,19 +151,15 @@ namespace ProxyServer
                 foreach (var node in textNodes)
                 {
                     // find all words with length 6
-                    string text = node.InnerHtml;
-                    string pattern = @"\b\w{6}\b";
-                    MatchCollection matches = Regex.Matches(text, pattern);
+                    var text = node.InnerHtml;
+                    var pattern = @"\b\w{6}\b";
+                    var matches = Regex.Matches(text, pattern);
 
                     // replace each matched word with the same word plus the ™ symbol
                     foreach (Match match in matches)
                     {
-                        if (match.Value == "scouts")
-                        {
-                            Console.WriteLine("afa");
-                        }
-                        string word = match.Value;
-                        string trademarked = word + "™";
+                        var word = match.Value;
+                        var trademarked = word + "™";
                         // check if the word has already been replaced
                         if (!text.Contains(trademarked))
                         {
@@ -173,13 +172,9 @@ namespace ProxyServer
                 }
 
                 // get the modified HTML string
-                string modifiedHtml = doc.DocumentNode.OuterHtml;
-                var withNoScript = Regex.Replace(modifiedHtml, "<script.*?</script>", "");
+                var modifiedHtml = doc.DocumentNode.OuterHtml;
 
-                var withCorrectLinks = withNoScript
-                    .Replace("https://habr.com", "/habrDotNet");
-
-                await context.Response.WriteAsync(withCorrectLinks, Encoding.UTF8);
+                await context.Response.WriteAsync(modifiedHtml, Encoding.UTF8);
             }
             else
             {
@@ -197,6 +192,20 @@ namespace ProxyServer
             }
 
             return result;
+        }
+    }
+
+    public static class HabrMiddlewareExtension
+    {
+
+        /// <summary>
+        /// Adds middleware for returning habr website.
+        /// </summary>
+        /// <param name="app"></param>
+        /// <returns>The IApplicationBuilder for Habr proxy.</returns>
+        public static IApplicationBuilder UseHabrMiddleware(this IApplicationBuilder app)
+        {
+            return app.UseMiddleware<HabrProxyMiddleware>();
         }
     }
 }
