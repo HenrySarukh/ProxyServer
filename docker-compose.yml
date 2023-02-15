@@ -1,0 +1,8 @@
+version: "3.8"
+services:
+  proxy:
+    build: .
+    environment:
+      - ASPNETCORE_ENVIRONMENT=development
+    ports:
+      - "7211:7288"

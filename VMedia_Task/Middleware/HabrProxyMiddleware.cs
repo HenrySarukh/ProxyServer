@@ -1,4 +1,6 @@
 ﻿using System.Text;
+using System.Text.RegularExpressions;
+using HtmlAgilityPack;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace ProxyServer
@@ -34,7 +36,7 @@ namespace ProxyServer
                     return;
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.WriteLine(e.Message);
             }
@@ -131,14 +133,41 @@ namespace ProxyServer
 
             if (IsContentOfType(responseMessage, "text/html") ||
                 IsContentOfType(responseMessage, "text/javascript") ||
-                IsContentOfType(responseMessage, "text/css") ||
-                IsContentOfType(responseMessage, "application/javascript"))
+                IsContentOfType(responseMessage, "text/css"))
             {
-                var stringContent = Encoding.UTF8.GetString(content);
-                var newContent = stringContent
-                    .Replace("https://habr.com", "/habrDotNet")
-                    .Replace("https://assets.habr.com", "/assetsHabr");
-                await context.Response.WriteAsync(newContent, Encoding.UTF8);
+                var pageContent = Encoding.UTF8.GetString(content);
+                HtmlDocument doc = new HtmlDocument();
+                doc.LoadHtml(pageContent);
+
+                HtmlNodeCollection paragraphs = doc.DocumentNode.SelectNodes("//p");
+
+                if (paragraphs != null)
+                {
+                    foreach (HtmlNode paragraph in paragraphs)
+                    {
+                        string[] words = paragraph.InnerText.Split(' '); // Split the text content into words
+
+                        for (int i = 0; i < words.Length; i++)
+                        {
+                            if (words[i].Length >= 6) // Check if the word length is greater than or equal to 6
+                            {
+                                words[i] = "™" + words[i]; // Add "+" symbol to the word
+                            }
+                        }
+
+                        string modifiedText = string.Join(" ", words); // Join the words back into a modified text
+                        paragraph.InnerHtml = modifiedText; // Set the modified text content
+                    }
+                }
+
+                var withNoScript = Regex.Replace(pageContent, "<script.*?</script>", "");
+
+                var withCorrectLinks = withNoScript
+                    .Replace("https://habr.com", "/habrDotNet");
+
+                var result = doc.DocumentNode.OuterHtml;
+
+                await context.Response.WriteAsync(withCorrectLinks, Encoding.UTF8);
             }
             else
             {

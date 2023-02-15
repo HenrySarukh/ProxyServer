@@ -9,13 +9,9 @@
   <ItemGroup>
     <None Remove="Middleware\" />
     <None Remove="HtmlAgilityPack" />
-    <None Remove="Jint" />
-    <None Remove="Microsoft.ChakraCore" />
-    <None Remove="Handler\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Middleware\" />
-    <Folder Include="Handler\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="HtmlAgilityPack" Version="1.11.46" />
