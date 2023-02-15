@@ -5,4 +5,5 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=development
     ports:
-      - "7211:7288"
+      - "80:80"
+      - "443:443"
