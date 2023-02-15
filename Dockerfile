@@ -3,9 +3,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:6.0 as build-env
 
 WORKDIR /src
-COPY VMedia_Task/*.csproj .
+COPY VMediaTask/*.csproj .
 RUN dotnet restore
-COPY VMedia_Task .
+COPY VMediaTask .
 RUN dotnet publish -c Release -o /publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 as runtime
@@ -18,4 +18,4 @@ ENV ASPNETCORE_Kestrel__Certificates__Default__KeyPath=/https/localhost.key
 COPY localhost.crt /https/
 COPY localhost.key /https/
 
-ENTRYPOINT ["dotnet", "VMedia_Task.dll"]
+ENTRYPOINT ["dotnet", "VMediaTask.dll"]
