@@ -136,36 +136,48 @@ namespace ProxyServer
                 IsContentOfType(responseMessage, "text/css"))
             {
                 var pageContent = Encoding.UTF8.GetString(content);
+                // assume htmlString contains the HTML code
                 HtmlDocument doc = new HtmlDocument();
                 doc.LoadHtml(pageContent);
 
-                HtmlNodeCollection paragraphs = doc.DocumentNode.SelectNodes("//p");
+                // select all visible text nodes
+                var textNodes = doc.DocumentNode.DescendantsAndSelf()
+                                  .Where(n => n.NodeType == HtmlNodeType.Text && n.ParentNode.Name != "script" && n.ParentNode.Name != "style");
 
-                if (paragraphs != null)
+                // process each text node
+                foreach (var node in textNodes)
                 {
-                    foreach (HtmlNode paragraph in paragraphs)
+                    // find all words with length 6
+                    string text = node.InnerHtml;
+                    string pattern = @"\b\w{6}\b";
+                    MatchCollection matches = Regex.Matches(text, pattern);
+
+                    // replace each matched word with the same word plus the ™ symbol
+                    foreach (Match match in matches)
                     {
-                        string[] words = paragraph.InnerText.Split(' '); // Split the text content into words
-
-                        for (int i = 0; i < words.Length; i++)
+                        if (match.Value == "scouts")
                         {
-                            if (words[i].Length >= 6) // Check if the word length is greater than or equal to 6
-                            {
-                                words[i] = "™" + words[i]; // Add "+" symbol to the word
-                            }
+                            Console.WriteLine("afa");
                         }
-
-                        string modifiedText = string.Join(" ", words); // Join the words back into a modified text
-                        paragraph.InnerHtml = modifiedText; // Set the modified text content
+                        string word = match.Value;
+                        string trademarked = word + "™";
+                        // check if the word has already been replaced
+                        if (!text.Contains(trademarked))
+                        {
+                            text = Regex.Replace(text, @"\b" + word + @"\b", trademarked);
+                        }
                     }
+
+                    // update the text node with the modified text
+                    node.InnerHtml = text;
                 }
 
-                var withNoScript = Regex.Replace(pageContent, "<script.*?</script>", "");
+                // get the modified HTML string
+                string modifiedHtml = doc.DocumentNode.OuterHtml;
+                var withNoScript = Regex.Replace(modifiedHtml, "<script.*?</script>", "");
 
                 var withCorrectLinks = withNoScript
                     .Replace("https://habr.com", "/habrDotNet");
-
-                var result = doc.DocumentNode.OuterHtml;
 
                 await context.Response.WriteAsync(withCorrectLinks, Encoding.UTF8);
             }
