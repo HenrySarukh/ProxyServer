@@ -2,7 +2,7 @@
 
 ## Run the server
 
-In VMediaTask folder run:
+Run in VMediaTask folder:
 
 ```sh
 dotnet build
@@ -11,10 +11,9 @@ dotnet run
 
 ## Docker
 
-In main folder run:
+Run in base directory
 
 ```sh
-docker-compose build proxy --no-cache
 docker-compose up
 ```
 
