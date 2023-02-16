@@ -9,6 +9,8 @@ namespace ProxyServer
         private static readonly HttpClient _httpClient = new HttpClient();
         private readonly RequestDelegate _next;
         private static bool firstTime = true;
+        private const string HabrURL = "https://habr.com";
+        private const string HabrSegment = "/habrDotNet";
 
         public HabrProxyMiddleware(RequestDelegate next)
         {
@@ -104,12 +106,12 @@ namespace ProxyServer
             Uri? targetUri = null;
             PathString remainingPath;
 
-            if (request.Path.StartsWithSegments("/habrDotNet", out remainingPath))
+            if (request.Path.StartsWithSegments(HabrSegment, out remainingPath))
             {
-                targetUri = new Uri("https://habr.com" + remainingPath);
+                targetUri = new Uri(HabrURL + remainingPath);
             }
 
-            var result = targetUri ?? new Uri((firstTime ? "https://habr.com/en/all" : "https://habr.com") + request.Path);
+            var result = targetUri ?? new Uri((firstTime ? HabrURL + "/en/all" : HabrURL) + request.Path);
             firstTime = false;
             return result;
         }
@@ -127,7 +129,7 @@ namespace ProxyServer
                 var withNoScript = Regex.Replace(pageContent, "<script.*?</script>", "");
 
                 var withCorrectLinks = withNoScript
-                    .Replace("https://habr.com", "/habrDotNet");
+                    .Replace(HabrURL, HabrSegment);
 
                 var doc = new HtmlDocument();
                 doc.LoadHtml(withCorrectLinks);
