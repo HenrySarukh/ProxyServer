@@ -2,7 +2,7 @@
 
 ## Run the server
 
-Run in VMediaTask folder:
+Run in VMediaTask directory:
 
 ```sh
 dotnet build
